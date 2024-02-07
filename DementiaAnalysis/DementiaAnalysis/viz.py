@@ -34,46 +34,64 @@ def plot_histograms(dataframe, exclude_columns = ['ID', 'Diagnosis', 'Gender']):
         plt.show()
 
 
-def plot_boxplots(dataframe, group_by, exclude_columns=['ID']):
+def plot_boxplots(dataframe, grouping_variable, variables=None, groups=None, exclude_columns=['ID']):
     """
-    Plots boxplots for numerical columns in the given dataframe, grouped by a specified categorical column.
+    Plots boxplots for specified variables in the dataframe, grouped by a specified categorical column.
+    When variables and a single group are specified, combines boxplots in the same figure for the specified group.
+    Otherwise, plots separate figures for each variable.
 
     Parameters:
     dataframe (pandas.DataFrame): The dataframe to plot boxplots for.
-    group_by (str): The name of the categorical column to group by.
-    exclude_columns (list, optional): A list of column names to exclude from plotting. 
-                                      Defaults to ['ID'].
-
-    Returns:
-    None
-
-    Raises:
-    ValueError: If the group_by column is not found in the dataframe or is not categorical.
+    grouping_variable (str): The name of the categorical column to group by.
+    variables (list, optional): A list of variable names to plot. If None, all numerical columns are plotted.
+    groups (list, optional): A list or a single group name within the grouping_variable column to include in the plot.
+                             If None, all groups are included.
+    exclude_columns (list, optional): A list of column names to exclude from plotting. Defaults to ['ID'].
 
     Example:
-    >>> plot_boxplots(df, group_by='Gender')
-
-    This will plot boxplots for all numerical columns in df, grouped by 'Gender', excluding 'ID'.
+    >>> plot_boxplots(df, grouping_variable='Diagnosis', 
+                      variables=['Mini-Mental State Examination Total Score', 'Digit Task'], 
+                      groups=['Logopenic Variant Primary Progressive Aphasia'])
     """
     
-    # Check if the group_by column is categorical
-    if group_by not in dataframe.columns or dataframe[group_by].dtype not in ['object', 'category']:
-        print(f"{group_by} must be a categorical column.")
-        return
+    if grouping_variable not in dataframe.columns or dataframe[grouping_variable].dtype not in ['object', 'category']:
+        raise ValueError(f"{grouping_variable} must be a categorical column.")
 
-    # Select all numerical columns
-    numerical_columns = dataframe.select_dtypes(include=['number']).columns
-    columns_to_plot = [col for col in numerical_columns if col not in exclude_columns]
+    # Filter dataframe for specified groups if provided
+    if groups is not None:
+        dataframe = dataframe[dataframe[grouping_variable].isin(groups)]
+    
+    if variables is not None:
+        # Convert a single variable string to a list
+        if isinstance(variables, str):
+            variables = [variables]
+        # Ensure specified variables are not in exclude_columns and exist in dataframe
+        variables = [var for var in variables if var not in exclude_columns and var in dataframe.columns]
 
-    for column in columns_to_plot:
+        # Melt the dataframe for side-by-side plotting
+        melted_df = dataframe.melt(id_vars=[grouping_variable], value_vars=variables, var_name='Variable', value_name='Score')
+        
         plt.figure(figsize=(12, 8))
-        sns.boxplot(x=group_by, y=column, data=dataframe)
-        plt.xticks(rotation=45, ha='right')
-        plt.title(f'Boxplot of {column} grouped by {group_by}')
-        plt.xlabel(group_by)
-        plt.ylabel(column)
+        sns.boxplot(x='Variable', y='Score', hue=grouping_variable, data=melted_df, palette="Set3")
+        plt.title(f'Boxplot of specified variables grouped by {grouping_variable}')
+        plt.xlabel('Variable')
+        plt.ylabel('Score')
+        plt.legend(title=grouping_variable)
         plt.show()
 
+    else:
+        # If no variables are specified, plot all numerical columns not in exclude_columns
+        numerical_columns = dataframe.select_dtypes(include=['number']).columns
+        variables = [col for col in numerical_columns if col not in exclude_columns]
+
+        for variable in variables:
+            plt.figure(figsize=(12, 8))
+            sns.boxplot(x=grouping_variable, y=variable, data=dataframe)
+            plt.xticks(rotation=45, ha='right')
+            plt.title(f'Boxplot of {variable} grouped by {grouping_variable}')
+            plt.xlabel(grouping_variable)
+            plt.ylabel(variable)
+            plt.show()
 
 
 def plot_correlation_matrix(dataframe, exclude_columns=['ID'], cmap='coolwarm', vmin=-1, vmax=1):
@@ -153,4 +171,41 @@ def plot_pairwise_correlations_with_regression(dataframe, exclude_columns=['ID',
     # Adjust the title of the plot
     g.fig.suptitle("Pairwise Correlations with Regression Line", y=1.08) # Adjust the title position
     
+    plt.show()
+
+
+
+def scatter_plot_with_regression(dataframe, x, y, add_regression_line=True):
+    """
+    Plots a scatter plot for the specified x and y variables in the given dataframe. 
+    Optionally, adds a regression line to the plot.
+
+    Parameters:
+    dataframe (pandas.DataFrame): The dataframe containing the data to plot.
+    x (str): The name of the column to use as the x variable in the scatter plot.
+    y (str): The name of the column to use as the y variable in the scatter plot.
+    add_regression_line (bool, optional): Whether to add a regression line to the scatter plot. 
+                                          Defaults to True.
+
+    Returns:
+    None
+
+    Example:
+    >>> scatter_plot_with_regression(df, 'Age', 'Score', add_regression_line=True)
+
+    This will plot a scatter plot for 'Age' and 'Score' in df, and add a regression line to the plot.
+    """
+    
+    plt.figure(figsize=(10, 6))
+    
+    # Scatter plot
+    plt.scatter(dataframe[x], dataframe[y], alpha=0.5)
+    
+    # Optional: Add regression line
+    if add_regression_line:
+        sns.regplot(x=x, y=y, data=dataframe, scatter=False, color="red")
+    
+    plt.title(f'Relationship between {x} and {y}')
+    plt.xlabel(x)
+    plt.ylabel(y)
     plt.show()

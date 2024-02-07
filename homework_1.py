@@ -1,7 +1,7 @@
 #%%
 from DementiaAnalysis.importer import import_dataframe
-from DementiaAnalysis.viz import plot_histograms, plot_boxplots, plot_correlation_matrix, plot_pairwise_correlations_with_regression
-
+from DementiaAnalysis.viz import plot_histograms, plot_boxplots, plot_correlation_matrix, plot_pairwise_correlations_with_regression, scatter_plot_with_regression
+from DementiaAnalysis.stats import perform_t_test, perform_correlation, perform_anova, perform_multiple_regression
 
 #%% Import data from csv file
 df = import_dataframe('/Users/pinheirochagas/Library/CloudStorage/Box-Box/Pedro/Stanford/code/mac_ai/guides/simulated_cognitive_tests_dataset.csv')
@@ -19,49 +19,62 @@ plot_correlation_matrix(df, vmin=-.8, vmax=.8, cmap='coolwarm')
 plot_pairwise_correlations_with_regression(df, include_columns=['Mini-Mental State Examination Total Score', 'Global Cognition',
        'Trail Making Test', 'Digit Task'])
 
+#%% Scatter plot with a regression line
+scatter_plot_with_regression(df, 'Mini-Mental State Examination Total Score', 'Global Cognition')
 
+#%% Perform t-test between groups
+result = perform_t_test(df, x='Mini-Mental State Examination Total Score', 
+               grouping_variable='Diagnosis', 
+               group1='Logopenic Variant Primary Progressive Aphasia', 
+               group2='Semantic Variant Primary Progressive Aphasia')
 
-#%%
-df = generate_data(100)
+plot_boxplots(df, grouping_variable='Diagnosis', 
+              variables=['Mini-Mental State Examination Total Score'], 
+              groups=['Logopenic Variant Primary Progressive Aphasia', 'Semantic Variant Primary Progressive Aphasia'])  # or 'Diagnosis'
+result.head()
+
+#%% Perform t-test within group
+result = perform_t_test(df, x=['Mini-Mental State Examination Total Score', 'Digit Task'],
+                grouping_variable='Diagnosis', 
+                group1='Logopenic Variant Primary Progressive Aphasia')
+
+plot_boxplots(df, grouping_variable='Diagnosis', 
+              variables=['Mini-Mental State Examination Total Score', 'Digit Task'], 
+              groups=['Logopenic Variant Primary Progressive Aphasia'])  # or 'Diagnosis'
+
+result.head()
+
+# %% Perform correlation
+result = perform_correlation(df, x='Mini-Mental State Examination Total Score', y='Global Cognition')
+result.head()
+
 # %%
-df['delta'] = df['post_test'] - df['pre_test']
-df.head()
-#%% Pearson correlation
-correlation, p_value = pearsonr(df['delta'], df['phonology_task_1'])
-# Print the results
-print(f"Correlation coefficient: {correlation}")
-print(f"P-value: {p_value}")
+# Example usage:
+results, posthoc_results = perform_anova(df, 
+                                         continuous_variable='Mini-Mental State Examination Total Score', 
+                                         grouping_variable='Diagnosis', alpha=0.05, posthoc=True)
 
-#%% Linear regression with random factor
-model = smf.mixedlm("delta ~ phonology_task_1", df, groups=df["pidn"])
-result = model.fit()
-print(result.summary())
 
-# %%  Scatter plot with a regression line
-plot = sns.lmplot(x='phonology_task_1', y='delta', data=df, aspect=1.2, height=10,scatter_kws={"s": 100})
+# %%
+results = perform_anova(df, continuous_variable='Boston Naming Test Correct', 
+                        grouping_variable='Diagnosis',
+                        groups=['Logopenic Variant Primary Progressive Aphasia', 
+                                'Semantic Variant Primary Progressive Aphasia',
+                                'Nonfluent Variant Primary Progressive Aphasia',
+                                'Logopenic Variant Primary Progressive Aphasia'], 
+                        alpha=0.05, posthoc=True)
 
-# Enhancing the plot
-plt.title('Intervention vs Phonology', size=50)
-plt.xlabel('Phonology', size=30)
-plt.ylabel('Intervention effect: (post-pre test)', size=30)
-plot.ax.tick_params(axis='both', which='major', labelsize=30)
+plot_boxplots(df, grouping_variable='Diagnosis', 
+              variables=['Boston Naming Test Correct'], 
+              groups=['Logopenic Variant Primary Progressive Aphasia', 
+                      'Semantic Variant Primary Progressive Aphasia',
+                      'Nonfluent Variant Primary Progressive Aphasia',
+                      'Logopenic Variant Primary Progressive Aphasia'])  # or 'Diagnosis'
+print(results)
 
-# %% Plot distribution of phonology_task_1
-sns.displot(df['phonology_task_1'], kde=True)
-
-#%% Create 2 phonology groups based on a median split
-df['phonology_task_1_group'] = df['phonology_task_1'] >= df['phonology_task_1'].median()
-df['phonology_task_1_group'] = df['phonology_task_1_group'].replace({True: 'High', False: 'Low'})
-
-#%% Boxplot of phonology_task_1_group vs delta
-# Boxplot of phonology_task_1_group vs delta
-plot = sns.boxplot(x='phonology_task_1_group', y='delta', data=df)
-plt.title('Intervention vs Phonology', size=20)
-plt.xlabel('Phonology', size=20)
-plt.ylabel('Intervention effect: (post-pre test)', size=20)
-plot.tick_params(axis='both', which='major', labelsize=20)
-#%% Run mixed effects model with delta as dependent, phonology groups as independent and pidn as random factor
-model = smf.mixedlm("delta ~ phonology_task_1_group", df, groups=df["pidn"])
-result = model.fit()
-print(result.summary())
+# %% Perform multiple regression
+results = perform_multiple_regression(df, 
+                                      dependent_variable = 'Boston Naming Test Correct', 
+                                      independent_variables=['Age', 'Attention', 'Digit Task'])
+print(results)
 # %%
