@@ -2,7 +2,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
-
+from sklearn.metrics import confusion_matrix, roc_curve, auc
+from scipy import interp
+from itertools import cycle
 
 def plot_histograms(dataframe, exclude_columns = ['ID', 'Diagnosis', 'Gender']):
     """
@@ -208,4 +210,106 @@ def scatter_plot_with_regression(dataframe, x, y, add_regression_line=True):
     plt.title(f'Relationship between {x} and {y}')
     plt.xlabel(x)
     plt.ylabel(y)
+    plt.show()
+
+
+def plot_multiclass_roc(true_labels, probabilities, classes):
+    """
+    Plots the Receiver Operating Characteristic (ROC) curve for multiclass classification.
+
+    Parameters:
+    true_labels (numpy.ndarray): A 2D array where each row represents a sample and each column represents a class. 
+                                 Each element should be 1 if the sample belongs to the corresponding class and 0 otherwise.
+    probabilities (numpy.ndarray): A 2D array where each row represents a sample and each column represents a class. 
+                                   Each element should be the probability that the sample belongs to the corresponding class.
+    n_classes (int): The number of classes.
+    classes (list): A list of class names. The order should correspond to the columns of true_labels and probabilities.
+
+    Returns:
+    None
+
+    This function computes and plots the ROC curve and ROC area for each class. It also computes and plots the micro-average 
+    ROC curve and ROC area. The ROC curves are plotted with different colors for each class. The plot includes a legend 
+    showing the area under the ROC curve for each class.
+
+    Example:
+    >>> plot_multiclass_roc(y_true, y_prob, 3, ['class1', 'class2', 'class3'])
+
+    This will plot the ROC curves for a 3-class classification problem with classes 'class1', 'class2', and 'class3'.
+    """
+    # Compute ROC curve and ROC area for each class
+    fpr = dict()
+    tpr = dict()
+    roc_auc = dict()
+    n_classes = len(classes)
+    for i in range(n_classes):
+        fpr[i], tpr[i], _ = roc_curve(true_labels[:, i], probabilities[:, i])
+        roc_auc[i] = auc(fpr[i], tpr[i])
+
+    # Aggregate all false positive rates
+    all_fpr = np.unique(np.concatenate([fpr[i] for i in range(n_classes)]))
+
+    # Interpolate all ROC curves at these points
+    mean_tpr = np.zeros_like(all_fpr)
+    for i in range(n_classes):
+        mean_tpr += interp(all_fpr, fpr[i], tpr[i])
+
+    # Compute micro-average ROC curve and ROC area
+    fpr["micro"], tpr["micro"], _ = roc_curve(true_labels.ravel(), probabilities.ravel())
+    roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+    
+    # Plot all ROC curves
+    plt.figure(figsize=(10, 8))
+
+    colors = cycle(['aqua', 'darkorange', 'cornflowerblue'])
+    for i, color in zip(range(n_classes), colors):
+        plt.plot(fpr[i], tpr[i], color=color, lw=2,
+                 label='ROC curve of class {0} (area = {1:0.2f})'
+                       ''.format(classes[i], roc_auc[i]))
+    
+    plt.plot([0, 1], [0, 1], 'k--', lw=2)
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Multiclass ROC')
+    plt.legend(loc="lower right")
+    plt.show()
+
+
+
+def plot_confusion_matrix(true_labels, predicted_labels, classes):
+    """
+    Plots a confusion matrix for the given true and predicted labels.
+
+    Parameters:
+    true_labels (numpy.ndarray): A 2D array where each row represents a sample and each column represents a class. 
+                                 Each element should be 1 if the sample belongs to the corresponding class and 0 otherwise.
+    predicted_labels (numpy.ndarray): A 1D array of predicted class indices for each sample.
+    classes (list): A list of class names. The order should correspond to the columns of true_labels.
+
+    Returns:
+    None
+
+    This function computes the confusion matrix from the true and predicted labels, and then plots it using a heatmap. 
+    The x-axis represents the predicted labels and the y-axis represents the true labels. The color of each cell in the 
+    heatmap corresponds to the number of samples with a particular pair of true and predicted labels.
+
+    Example:
+    >>> plot_confusion_matrix(y_true, y_pred, ['class1', 'class2', 'class3'])
+
+    This will plot the confusion matrix for a 3-class classification problem with classes 'class1', 'class2', and 'class3'.
+    """
+    cm = confusion_matrix(true_labels.argmax(axis=1), predicted_labels)
+    fig, ax = plt.subplots(figsize=(10, 10))
+    sns.heatmap(cm, annot=True, fmt="d", cmap=plt.cm.Blues, ax=ax, xticklabels=classes, yticklabels=classes)
+    
+    ax.set_title('Confusion Matrix')
+    ax.set_xlabel('Predicted Label')
+    ax.set_ylabel('True Label')
+    
+    # Rotate the tick labels for clarity
+    plt.xticks(rotation=45, ha="right")
+    plt.yticks(rotation=45)
+
     plt.show()

@@ -1,7 +1,10 @@
 #%%
 from DementiaAnalysis.importer import import_dataframe
-from DementiaAnalysis.viz import plot_histograms, plot_boxplots, plot_correlation_matrix, plot_pairwise_correlations_with_regression, scatter_plot_with_regression
+from DementiaAnalysis.viz import plot_histograms, plot_boxplots, plot_correlation_matrix, plot_pairwise_correlations_with_regression, scatter_plot_with_regression, plot_multiclass_roc, plot_confusion_matrix
 from DementiaAnalysis.stats import perform_t_test, perform_correlation, perform_anova, perform_multiple_regression
+from DementiaAnalysis.ml import classify_and_evaluate
+
+
 
 #%% Import data from csv file
 df = import_dataframe('/Users/pinheirochagas/Library/CloudStorage/Box-Box/Pedro/Stanford/code/mac_ai/guides/simulated_cognitive_tests_dataset.csv')
@@ -30,7 +33,8 @@ result = perform_t_test(df, x='Mini-Mental State Examination Total Score',
 
 plot_boxplots(df, grouping_variable='Diagnosis', 
               variables=['Mini-Mental State Examination Total Score'], 
-              groups=['Logopenic Variant Primary Progressive Aphasia', 'Semantic Variant Primary Progressive Aphasia'])  # or 'Diagnosis'
+              groups=['Logopenic Variant Primary Progressive Aphasia', 
+                      'Semantic Variant Primary Progressive Aphasia'])  # or 'Diagnosis'
 result.head()
 
 #%% Perform t-test within group
@@ -60,16 +64,14 @@ results = perform_anova(df, continuous_variable='Boston Naming Test Correct',
                         grouping_variable='Diagnosis',
                         groups=['Logopenic Variant Primary Progressive Aphasia', 
                                 'Semantic Variant Primary Progressive Aphasia',
-                                'Nonfluent Variant Primary Progressive Aphasia',
-                                'Logopenic Variant Primary Progressive Aphasia'], 
+                                'Nonfluent Variant Primary Progressive Aphasia'], 
                         alpha=0.05, posthoc=True)
 
 plot_boxplots(df, grouping_variable='Diagnosis', 
               variables=['Boston Naming Test Correct'], 
               groups=['Logopenic Variant Primary Progressive Aphasia', 
                       'Semantic Variant Primary Progressive Aphasia',
-                      'Nonfluent Variant Primary Progressive Aphasia',
-                      'Logopenic Variant Primary Progressive Aphasia'])  # or 'Diagnosis'
+                      'Nonfluent Variant Primary Progressive Aphasia'])  # or 'Diagnosis'
 print(results)
 
 # %% Perform multiple regression
@@ -77,4 +79,28 @@ results = perform_multiple_regression(df,
                                       dependent_variable = 'Boston Naming Test Correct', 
                                       independent_variables=['Age', 'Attention', 'Digit Task'])
 print(results)
+
+
+# %% Classify and evaluate
+# Example usage
+grouping_variable = 'Diagnosis'
+groups=['Logopenic Variant Primary Progressive Aphasia', 
+        'Semantic Variant Primary Progressive Aphasia',
+        'Nonfluent Variant Primary Progressive Aphasia']  # Example groups
+features = ['Mini-Mental State Examination Total Score', 'Global Cognition',
+            'Trail Making Test', 'Digit Task', 'Verbal Memory Recall (30-item)',
+            'Verbal Memory Recall (10-item)', 'Attention',
+            'Rey-Osterrieth Complex Figure Test', 'Memory and Naming',
+            'Boston Naming Test Correct', 'Digit Forward Correct', 'Digit Backward',
+            'Auditory Naming Correct',
+            'Rey-Osterrieth Complex Figure Test (10-min delay)',
+            'Rey-Osterrieth Complex Figure Test Recognition',
+            'Geriatric Depression Scale Total Score',
+            'Clinical Dementia Rating Total Score']  # Example features
+results = classify_and_evaluate(df, grouping_variable, groups, features, estimator='svm', scoring='accuracy', n_folds=5)
+
+# results['true_labels'], results['predicted_labels'], and results['probabilities'] can be used for further analysis like confusion matrix, ROC curve, etc.
+
+
+
 # %%
