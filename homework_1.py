@@ -1,9 +1,8 @@
 #%%
 from DementiaAnalysis.importer import import_dataframe
-from DementiaAnalysis.viz import plot_histograms, plot_boxplots, plot_correlation_matrix, plot_pairwise_correlations_with_regression, scatter_plot_with_regression, plot_multiclass_roc, plot_confusion_matrix
+from DementiaAnalysis.viz import plot_histograms, plot_boxplots, plot_correlation_matrix, plot_pairwise_correlations_with_regression, scatter_plot_with_regression, plot_multiclass_roc, plot_confusion_matrix, plot_feature_importance
 from DementiaAnalysis.stats import perform_t_test, perform_correlation, perform_anova, perform_multiple_regression
 from DementiaAnalysis.ml import classify_and_evaluate
-
 
 
 #%% Import data from csv file
@@ -84,7 +83,7 @@ print(results)
 # %% Classify and evaluate
 # Example usage
 grouping_variable = 'Diagnosis'
-groups=['Logopenic Variant Primary Progressive Aphasia', 
+classes=['Logopenic Variant Primary Progressive Aphasia', 
         'Semantic Variant Primary Progressive Aphasia',
         'Nonfluent Variant Primary Progressive Aphasia']  # Example groups
 features = ['Mini-Mental State Examination Total Score', 'Global Cognition',
@@ -97,10 +96,24 @@ features = ['Mini-Mental State Examination Total Score', 'Global Cognition',
             'Rey-Osterrieth Complex Figure Test Recognition',
             'Geriatric Depression Scale Total Score',
             'Clinical Dementia Rating Total Score']  # Example features
-results = classify_and_evaluate(df, grouping_variable, groups, features, estimator='svm', scoring='accuracy', n_folds=5)
-
-# results['true_labels'], results['predicted_labels'], and results['probabilities'] can be used for further analysis like confusion matrix, ROC curve, etc.
-
+#results = classify_and_evaluate(df, grouping_variable, classes, features, estimator='svm', scoring='accuracy', n_folds=5)
+results = classify_and_evaluate(df, grouping_variable, classes, features, estimator='random_forest', scoring='accuracy', cross_validation='stratified_kfold', n_folds=5, feature_importance=True)
 
 
+
+# %% Plot multiclass ROC
+plot_multiclass_roc(results['true_labels'], results['probabilities'], classes=classes)
+
+# %% Plot confusion matrix
+plot_confusion_matrix(results['true_labels'], results['predicted_labels'], classes=classes)
+
+# %% Plot feature importance 
+plot_feature_importance(results['feature_importance'])
+
+# %%
+plot_boxplots(df, grouping_variable='Diagnosis', 
+              variables=['Digit Backward'], 
+              groups=['Logopenic Variant Primary Progressive Aphasia', 
+                      'Semantic Variant Primary Progressive Aphasia',
+                       'Nonfluent Variant Primary Progressive Aphasia'])  # or 'Diagnosis'
 # %%

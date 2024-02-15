@@ -313,3 +313,31 @@ def plot_confusion_matrix(true_labels, predicted_labels, classes):
     plt.yticks(rotation=45)
 
     plt.show()
+
+
+def plot_feature_importance(feature_importance, title='Feature Importance', ylabel='Feature Importance'):
+    """
+    This function plots the feature importance in a bar chart format.
+
+    Parameters:
+    feature_importance (dict): A dictionary where keys are feature names and values are their corresponding importance.
+    title (str, optional): The title of the plot. Default is 'Feature Importance'.
+    xlabel (str, optional): The label for the x-axis. Default is 'Feature'.
+    ylabel (str, optional): The label for the y-axis. Default is 'Importance'.
+
+    Returns:
+    None: This function doesn't return anything; it shows a plot.
+
+    Note:
+    The function sorts the features based on their importance in descending order before plotting.
+
+    Example:
+    >>> plot_feature_importance({'feature1': 0.2, 'feature2': 0.1, 'feature3': 0.7})
+    """
+    feature_importance = dict(sorted(feature_importance.items(), key=lambda item: item[1], reverse=True))
+    plt.bar(feature_importance.keys(), feature_importance.values())
+    plt.xticks(rotation=90)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.show()
+
