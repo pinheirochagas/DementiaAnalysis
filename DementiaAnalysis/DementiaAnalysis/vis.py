@@ -6,6 +6,15 @@ from sklearn.metrics import confusion_matrix, roc_curve, auc
 from scipy import interp
 from itertools import cycle
 
+from nilearn import plotting
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+from sklearn.metrics import confusion_matrix, roc_curve, auc
+from scipy import interp
+
+
 def plot_histograms(dataframe, exclude_columns = ['ID', 'Diagnosis', 'Gender']):
     """
     Plots histograms for numerical columns in the given dataframe, excluding specified columns.
@@ -237,6 +246,10 @@ def plot_multiclass_roc(true_labels, probabilities, classes):
 
     This will plot the ROC curves for a 3-class classification problem with classes 'class1', 'class2', and 'class3'.
     """
+    # Ensure true_labels and probabilities are numpy arrays
+    true_labels = np.array(true_labels)
+    probabilities = np.array(probabilities)
+
     # Compute ROC curve and ROC area for each class
     fpr = dict()
     tpr = dict()
@@ -341,3 +354,24 @@ def plot_feature_importance(feature_importance, title='Feature Importance', ylab
     plt.title(title)
     plt.show()
 
+def vis_voxel_contributions(subject_img, model, nifti_masker):
+    """
+    Visualize which voxels contributed most to classifying a subject as class 1.
+    
+    Parameters:
+    - subject_img (str): Path to the subject's NIfTI file.
+    - model (SVC): Trained linear SVM model.
+    - nifti_masker (NiftiMasker): NiftiMasker used to preprocess the data.
+    """
+    # Transform the subject's image using the NiftiMasker
+    subject_features = nifti_masker.transform(subject_img)
+
+    # Calculate the contribution of each voxel (feature) to the decision function
+    voxel_contributions = subject_features * model.coef_[0]  # Assuming binary classification
+
+    # Inverse transform the contributions back to the voxel space for visualization
+    contribution_img = nifti_masker.inverse_transform(voxel_contributions)
+
+    # Visualize the contributions
+    view = plotting.view_img(contribution_img, threshold='70%', cmap='cold_hot', symmetric_cmap=True)
+    view.open_in_browser()
