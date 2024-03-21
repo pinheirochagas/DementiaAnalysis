@@ -4,25 +4,7 @@ import nibabel as nib
 from nilearn import image, datasets
 from nilearn.input_data import NiftiLabelsMasker
 import os
-from langchain.llms import OpenAI
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
-
-from langchain.chat_models import ChatOpenAI
-from langchain.prompts.chat import (
-    ChatPromptTemplate,
-    SystemMessagePromptTemplate,
-    AIMessagePromptTemplate,
-    HumanMessagePromptTemplate,
-)
-from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from dotenv import load_dotenv, find_dotenv
-import openai
-
-from langchain.chains import ConversationChain
-from langchain.chat_models import AzureChatOpenAI 
-
-from langchain.chains.conversation.memory import ConversationBufferMemory
 from sklearn.model_selection import train_test_split
 from nilearn.maskers import NiftiMasker
 from sklearn.feature_selection import VarianceThreshold
